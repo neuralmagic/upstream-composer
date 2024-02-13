@@ -10,7 +10,7 @@ import textwrap
 
 import setuptools
 from setuptools import setup
-from setuptools.command.develop import develop as develop_orig
+from setuptools.command.develop import develop #as develop_orig
 
 # Read the composer version
 # Cannot import from `composer.__version__` since that will not be available when building or installing the package
@@ -25,21 +25,20 @@ _IS_USER = '--user' in sys.argv[1:]
 _IS_VIRTUALENV = 'VIRTUAL_ENV' in os.environ
 
 
+# NOTE from Eldar: I have disabled this as I have no idea why we need this restriction.
 # From https://stackoverflow.com/questions/51292333/how-to-tell-from-setup-py-if-the-module-is-being-installed-in-editable-mode
-class develop(develop_orig):
-    """Override the ``develop`` class to error if attempting an editable install as root."""
+#class develop(develop_orig):
+#    """Override the ``develop`` class to error if attempting an editable install as root."""
 
-    def run(self):
-        if _IS_ROOT and (not _IS_VIRTUALENV) and (not _IS_USER):
-            raise RuntimeError(
-                textwrap.dedent(
-                    """\
-                    When installing in editable mode as root outside of a virtual environment,
-                    please specify `--user`. Editable installs as the root user outside of a virtual environment
-                    do not work without the `--user` flag. Please instead run something like: `pip install --user -e .`""",
-                ),
-            )
-        super().run()
+#    def run(self):
+#        if _IS_ROOT and (not _IS_VIRTUALENV) and (not _IS_USER):
+#            raise RuntimeError(
+#                textwrap.dedent("""\
+#                    When installing in editable mode as root outside of a virtual environment,
+#                    please specify `--user`. Editable installs as the root user outside of a virtual environment
+#                    do not work without the `--user` flag. Please instead run something like: `pip install --user -e .`"""
+#                               ))
+#        super().run()
 
 
 # From https://github.com/pypa/pip/issues/7953#issuecomment-645133255
