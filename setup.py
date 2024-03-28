@@ -78,9 +78,9 @@ install_requires = [
     'pyyaml>=6.0,<7',
     'tqdm>=4.62.3,<5',
     'torchmetrics>=0.10.0,<1.3.2',
-    'torch_optimizer>=0.3.0,<0.4',
-    'torchvision>=0.13.1,<0.20',  # TODO: Tighten before release
-    'torch>=2.0.1,<2.3.1',  # TODO: Tighten before release
+    'torch_optimizer==0.3.0',
+    'torchvision>=0.13.1,<0.17.2',  # TODO: Tighten before release
+    'torch>=2.0.1,<2.2.2',  # TODO: Tighten before release
     'requests>=2.26.0,<3',
     'numpy>=1.21.5,<1.27.0',
     'psutil>=5.8.0,<6',
