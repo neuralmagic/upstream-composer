@@ -26,6 +26,7 @@ from composer.loggers.remote_uploader_downloader import RemoteUploaderDownloader
 from composer.loggers.slack_logger import SlackLogger
 from composer.loggers.tensorboard_logger import TensorboardLogger
 from composer.loggers.wandb_logger import WandBLogger
+from composer.loggers.clearml_logger import ClearMLLogger
 
 # All needs to be defined properly for sphinx autosummary
 __all__ = [
@@ -43,4 +44,5 @@ __all__ = [
     'MLFlowLogger',
     'MosaicMLLogger',
     'SlackLogger',
+    'ClearMLLogger',
 ]
