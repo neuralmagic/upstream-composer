@@ -135,7 +135,8 @@ class ClearMLLogger(LoggerDestination):
         raise NotImplementedError('I have not implemented ClearML logging for images')
 
     def state_dict(self) -> Dict[str, Any]:
-        raise NotImplementedError('I have not implemented ClearML state_dict')
+        return {}
+        # raise NotImplementedError('I have not implemented ClearML state_dict')
 
     def init(self, state: State, logger: Logger) -> None:
         del logger  # unused
