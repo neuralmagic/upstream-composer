@@ -17,8 +17,6 @@ __all__ = [
     'LanguageCrossEntropy',
     'MaskedAccuracy',
     'LanguagePerplexity',
-    'InContextLearningCrossEntropy',
-    'InContextLearningPerplexity',
 ]
 
 
@@ -204,63 +202,3 @@ InContextLearningLMExpectedCalibrationError = InContextLearningMetric
 InContextLearningMCExpectedCalibrationError = InContextLearningMetric
 InContextLearningQAAccuracy = InContextLearningMetric
 InContextLearningMultipleChoiceAccuracy = InContextLearningMetric
-
-
-# === stuff belowe added by Eldar to track in-context learning metrics ===
-# NOTE: dont use LanguageCrossEntropy in the name as regex matching in _filter_metrics will pick it up for pretraning eval data
-class InContextLearningCrossEntropy(InContextLearningMetric):
-    # Make torchmetrics call update only once
-    full_state_update = False
-
-    def __init__(self, dist_sync_on_step: bool = False, ignore_index: int = -100):
-        super().__init__(dist_sync_on_step=dist_sync_on_step)
-
-        self.ignore_index = ignore_index
-        self.loss_fn = torch.nn.CrossEntropyLoss(ignore_index=ignore_index, reduction='sum')
-        self.add_state('sum_loss', default=torch.tensor(0.), dist_reduce_fx='sum')
-        self.add_state('total_items', default=torch.tensor(0), dist_reduce_fx='sum')
-
-    def update(self, batch: dict, output: Union[Mapping, Tensor], target: Tensor) -> None:
-        """Updates the internal state with results from a new batch.
-
-        Args:
-            output (Mapping): The output from the model, which must contain
-                either the Tensor or a Mapping type that contains the loss or model logits.
-            target (~torch.Tensor): A Tensor of ground-truth values to compare against.
-        """
-        for (start, end), gold_idx in zip(batch['choice_groupings'], batch['gold_indices']):
-            sample_targets = target[start:end]  # all (correct and incorrect) answers/choices for given data sample
-            correct_targets = sample_targets[gold_idx]  # we are interested in PPLs for correct choices only
-            continuation_indices = batch['continuation_indices'][start:end][gold_idx]
-            # correct_targets.shape = (seq_len,) is why we do dim=0 for index_select to select across columns
-            # labels are shifted by one place to the left, so we shift continuation_indices as well
-            continuation_targets = correct_targets.index_select(dim=0, index=continuation_indices-1)
-            assert all(continuation_targets == batch['input_ids'][start:end][gold_idx][batch['continuation_indices'][start:end][gold_idx]])
-            # we need to identify which outputs correspond to model's predictions at continuation_indices
-            continuation_logits = output[start:end][gold_idx].index_select(dim=0, index=continuation_indices-1)
-
-            # print(f"decoded = {tokenizer.decode(continuation_targets)}")
-
-            losses = self.loss_fn(continuation_logits, continuation_targets)
-            self.sum_loss += losses
-            assert len(continuation_indices) == continuation_targets.shape[0] == continuation_logits.shape[0]
-            self.total_items += len(continuation_indices)
-
-    def compute(self) -> Tensor:
-        """Aggregate the state over all processes to compute the metric.
-
-        Returns:
-            loss: The loss averaged across all batches as a :class:`~torch.Tensor`.
-        """
-        # Return average loss over entire dataset
-        return self.sum_loss / self.total_items  #type: ignore (third-party)
-
-
-# NOTE: dont use LanguagePerplexity in the name as regex matching in _filter_metrics will pick it up for pretraning eval data
-class InContextLearningPerplexity(InContextLearningCrossEntropy):
-    """Subclasses :class:`~composer.metrics.nlp.LanguageCrossEntropy` to implement perplexity."""
-
-    def compute(self) -> Tensor:
-        """Returns torch.exp() of the LanguageCrossEntropy."""
-        avg_loss = super().compute()
-        return torch.exp(avg_loss)
